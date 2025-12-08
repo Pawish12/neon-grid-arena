@@ -21,7 +21,7 @@ def draw_grid():
     for y in range(0, HEIGHT, 40):
         pygame.draw.line(screen, GRID, (0,y), (WIDTH,y), 1)
 
-class Player:
+class Player: 
     def __init__(self):
         self.rect = pygame.Rect(WIDTH//2-16, HEIGHT//2-16, 32, 32)
         self.speed = 7
@@ -33,7 +33,7 @@ class Player:
             if keys[pygame.K_RIGHT]: self.rect.x += self.speed
             if keys[pygame.K_UP]: self.rect.y -= self.speed
             if keys[pygame.K_DOWN]: self.rect.y += self.speed
-            # Bounds
+            # Boundaries
             self.rect.x = max(0, min(WIDTH-32, self.rect.x))
             self.rect.y = max(0, min(HEIGHT-32, self.rect.y))
 
@@ -70,6 +70,7 @@ class Wall:
     def draw(self):
         pygame.draw.rect(screen, WALL, self.rect, border_radius=7)
 
+# --- INITIAL GAME STATE ---
 player = Player()
 orbs = [Orb()]
 walls = []
@@ -83,6 +84,15 @@ while True:
         if event.type == pygame.QUIT:
             pygame.quit(); sys.exit()
 
+    # --- SIMPLE RESTART ---
+    if not player.alive and keys[pygame.K_r]:
+        player = Player()
+        orbs = [Orb()]
+        walls = []
+        wall_timer = 0
+        score = 0
+
+    # --- GAMEPLAY ---
     player.move(keys)
     if player.alive:
         # Orb collection
@@ -91,12 +101,15 @@ while True:
                 orbs.remove(orb)
                 score += 1
                 orbs.append(Orb())
+
         # Spawn walls
         wall_timer += 1
         if wall_timer > 40:
             if len(walls) < 12:
                 walls.append(Wall())
             wall_timer = 0
+
+        # Wall movement + collision
         for wall in walls[:]:
             wall.update()
             if wall.rect.right < 0 or wall.rect.left > WIDTH or wall.rect.bottom < 0 or wall.rect.top > HEIGHT:
@@ -104,20 +117,20 @@ while True:
             elif player.rect.colliderect(wall.rect):
                 player.alive = False
 
-    # Drawing
+    # --- DRAWING ---
     screen.fill(BG)
     draw_grid()
+
     for wall in walls: wall.draw()
     for orb in orbs: orb.draw()
     player.draw()
-    sc = font.render(f"Score: {score}", 1, (GRID if player.alive else (255,90,90)))
+
+    sc = font.render(f"Score: {score}", True, GRID if player.alive else (255,90,90))
     screen.blit(sc, (16, 8))
+
     if not player.alive:
-        tx = font.render("GAME OVER (Esc quits)", 1, (255, 70, 90))
-        screen.blit(tx, (WIDTH//2-140, HEIGHT//2-26))
-        # Optional: Press Esc to quit
-        if keys[pygame.K_ESCAPE]:
-            pygame.quit(); sys.exit()
+        tx = font.render("GAME OVER - Press R to Restart", True, (255, 70, 90))
+        screen.blit(tx, (WIDTH//2 - 220, HEIGHT//2 - 26))
 
     pygame.display.flip()
     clock.tick(60)
